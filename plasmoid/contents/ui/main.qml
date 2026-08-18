@@ -1,54 +1,70 @@
+import QtCore
 import QtQuick
 import QtQuick.Layouts
 import org.kde.plasma.plasmoid
 import org.kde.plasma.core as PlasmaCore
+import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.plasma5support as P5Support
 import org.kde.kirigami as Kirigami
 
 PlasmoidItem {
     id: root
 
-    readonly property string object: "org.kde.KWin /VirtualKeyboard org.kde.kwin.VirtualKeyboard"
-    readonly property string readCommand: "busctl --user get-property " + object + " visible"
-    readonly property string watchCommand: "sh -c \"gdbus monitor --session --dest org.kde.KWin --object-path /VirtualKeyboard | grep -m1 -E 'visibleChanged|activeChanged'\""
-    readonly property string showCommand: "busctl --user call " + object + " forceActivate"
-    readonly property string hideCommand: "sh -c \"busctl --user set-property " + object + " active b false; busctl --user set-property " + object + " active b true\""
+    readonly property string showCommand: String(StandardPaths.writableLocation(StandardPaths.HomeLocation)).replace("file://", "") + "/.local/bin/linux-plasma-keyboard-toggle"
 
-    property bool keyboardVisible: false
-
+    Plasmoid.icon: "input-keyboard"
     preferredRepresentation: compactRepresentation
     toolTipMainText: i18n("Virtual Keyboard")
-    toolTipSubText: keyboardVisible ? i18n("Visible - click to hide") : i18n("Hidden - click to show")
+    toolTipSubText: i18n("Click to show the on-screen keyboard")
+
+    function showKeyboard() {
+        runner.connectSource(showCommand)
+    }
 
     P5Support.DataSource {
         id: runner
         engine: "executable"
         connectedSources: []
-
         onNewData: function (source, data) {
             disconnectSource(source)
-            if (source === root.readCommand) {
-                root.keyboardVisible = (data["stdout"] || "").indexOf("true") !== -1
-                connectSource(root.watchCommand)
-            } else {
-                connectSource(root.readCommand)
-            }
         }
     }
 
-    Component.onCompleted: runner.connectSource(readCommand)
-
     compactRepresentation: MouseArea {
-        Layout.minimumWidth: Kirigami.Units.iconSizes.small
-        Layout.minimumHeight: Kirigami.Units.iconSizes.small
+        id: compact
+        implicitWidth: Kirigami.Units.gridUnit * 1.5
+        implicitHeight: Kirigami.Units.gridUnit * 1.5
         hoverEnabled: true
+        onClicked: root.showKeyboard()
+
+        Rectangle {
+            anchors.fill: parent
+            radius: Kirigami.Units.cornerRadius
+            color: Kirigami.Theme.highlightColor
+            opacity: compact.pressed ? 0.5 : (compact.containsMouse ? 0.25 : 0)
+
+            Behavior on opacity {
+                NumberAnimation { duration: Kirigami.Units.shortDuration }
+            }
+        }
 
         Kirigami.Icon {
             anchors.fill: parent
-            source: root.keyboardVisible ? "input-keyboard-virtual-on" : "input-keyboard-virtual-off"
-            active: parent.containsMouse
+            anchors.margins: Math.round(Math.min(compact.width, compact.height) * 0.18)
+            source: "input-keyboard"
         }
+    }
 
-        onClicked: runner.connectSource(root.keyboardVisible ? root.hideCommand : root.showCommand)
+    fullRepresentation: ColumnLayout {
+        Layout.minimumWidth: Kirigami.Units.gridUnit * 12
+        Layout.minimumHeight: Kirigami.Units.gridUnit * 6
+        spacing: Kirigami.Units.smallSpacing
+
+        PlasmaComponents.Button {
+            Layout.alignment: Qt.AlignHCenter
+            icon.name: "input-keyboard"
+            text: i18n("Show keyboard")
+            onClicked: root.showKeyboard()
+        }
     }
 }

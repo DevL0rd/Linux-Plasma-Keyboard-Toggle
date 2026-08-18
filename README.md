@@ -1,8 +1,6 @@
 # Linux Plasma Keyboard Toggle
 
-A small KDE Plasma 6 panel widget that shows and hides the on-screen keyboard, and indicates whether it is currently visible.
-
-The icon reflects the real keyboard state rather than only what the widget did. If a text field raises the keyboard on its own, or something else dismisses it, the icon updates to match. State changes are received from KWin over D-Bus signals, so nothing is polled.
+A small KDE Plasma 6 panel widget that shows the on-screen keyboard.
 
 Useful when streaming a desktop to a tablet or phone, where the keyboard normally only appears on a touched text field and there is no other way to summon it.
 
@@ -31,12 +29,9 @@ Remove the widget from your panel if it is still shown.
 
 ## Behaviour
 
-| Icon | Meaning |
-| --- | --- |
-| `input-keyboard-virtual-on` | Keyboard is visible; clicking hides it |
-| `input-keyboard-virtual-off` | Keyboard is hidden; clicking shows it |
+Clicking the icon calls `forceActivate` on KWin's virtual keyboard, which shows it.
 
-Showing calls `forceActivate` on KWin's virtual keyboard. Hiding disables and immediately re-enables it, which dismisses the keyboard while leaving automatic show-on-touch working.
+There is no hide action. KWin's virtual keyboard D-Bus interface exposes no way to dismiss the keyboard; setting `active` to false or changing `mode` leaves it visible. The keyboard hides itself when the focused text field loses focus, or through its own close button. For the same reason the widget does not indicate whether the keyboard is currently open.
 
 ## Notes
 
